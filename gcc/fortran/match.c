@@ -6012,7 +6012,7 @@ copy_ts_from_selector_to_associate (gfc_expr *associate, gfc_expr *selector)
   else
     assoc_sym->as = NULL;
 
-  if (selector->ts.type == BT_CLASS)
+  if (selector->ts.type == BT_CLASS && gfc_expr_attr (selector).class_ok)
     {
       /* The correct class container has to be available.  */
       assoc_sym->ts.type = BT_CLASS;
