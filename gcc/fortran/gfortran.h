@@ -3214,6 +3214,7 @@ void gfc_add_full_array_ref (gfc_expr *, gfc_array_spec *);
 gfc_expr * gfc_lval_expr_from_sym (gfc_symbol *);
 
 gfc_array_spec *gfc_get_full_arrayspec_from_expr (gfc_expr *expr);
+gfc_array_spec *gfc_get_arrayspec_from_expr (gfc_expr *expr);
 
 bool gfc_traverse_expr (gfc_expr *, gfc_symbol *,
 			bool (*)(gfc_expr *, gfc_symbol *, int*),

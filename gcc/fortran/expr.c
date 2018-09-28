@@ -4794,6 +4794,120 @@ gfc_get_full_arrayspec_from_expr (gfc_expr *expr)
 }
 
 
+/* Helper function for gfc_get_arrayspec_from_expr.  */
+
+static void
+update_arrayspec_with_array_ref (gfc_array_spec *as,  const gfc_array_ref &ar)
+{
+  gcc_assert(as);
+  switch (ar.type)
+    {
+    case AR_ELEMENT:
+      as->type = AS_EXPLICIT;
+      as->rank = ar.dimen;
+      for (int i=0; i<as->rank; i++)
+	  as->upper[i] = as->lower[i] = gfc_get_int_expr
+					    (gfc_default_integer_kind, NULL, 1);
+      break;
+    case AR_SECTION:
+      as->type = AS_EXPLICIT;
+      as->rank = ar.dimen;
+      for (int i=0; i<as->rank; i++)
+	switch (ar.dimen_type[i])
+	  {
+	  case DIMEN_RANGE:
+	    {
+	      as->lower[i] = gfc_get_int_expr (gfc_default_integer_kind,
+					       NULL, 1);
+	      gfc_expr *diff = gfc_get_operator_expr (NULL, INTRINSIC_MINUS,
+						  gfc_copy_expr (ar.end[i]),
+						  gfc_copy_expr (ar.start[i]));
+	      if (ar.stride[i])
+		diff = gfc_get_operator_expr (NULL, INTRINSIC_DIVIDE, diff,
+					      gfc_copy_expr (ar.stride[i]));
+	      gfc_expr *one = gfc_get_int_expr (gfc_default_integer_kind,
+						NULL, 1);
+	      as->upper[i] = gfc_get_operator_expr (NULL, INTRINSIC_PLUS,
+						    diff, one);
+	      gfc_simplify_expr (as->upper[i], 0);
+	      break;
+	    }
+	  case DIMEN_VECTOR:
+	    as->lower[i] = gfc_get_int_expr (gfc_default_integer_kind, NULL, 1);
+	    as->upper[i] = gfc_get_int_expr (gfc_default_integer_kind, NULL,
+					    mpz_get_si (ar.start[i]->shape[0]));
+	    break;
+	  default:
+	    break;
+	  }
+      break;
+    case AR_UNKNOWN:
+      as = NULL;
+      break;
+
+    case AR_FULL:
+      break;
+    }
+}
+
+
+/* Determine the array spec of an array expression.  */
+
+gfc_array_spec *
+gfc_get_arrayspec_from_expr (gfc_expr *expr)
+{
+  gfc_array_spec *as;
+
+  if (expr->rank == 0)
+    return NULL;
+
+  switch (expr->expr_type)
+    {
+    case EXPR_VARIABLE:
+    case EXPR_CONSTANT:
+      if (expr->symtree)
+	as = gfc_copy_array_spec (expr->symtree->n.sym->as);
+      else
+	as = NULL;
+
+      for (gfc_ref *ref = expr->ref; ref; ref = ref->next)
+	{
+	  switch (ref->type)
+	    {
+	    case REF_COMPONENT:
+	      /* Follow any component references.  */
+	      as = gfc_copy_array_spec (ref->u.c.component->as);
+	      break;
+
+	    case REF_SUBSTRING:
+	      break;
+
+	    case REF_ARRAY:
+	      update_arrayspec_with_array_ref (as, ref->u.ar);
+	      break;
+	    }
+	}
+      return as;
+    case EXPR_FUNCTION:
+      return expr->value.function.esym->as;
+    case EXPR_OP:
+      {
+	gfc_array_spec *as1 = gfc_get_arrayspec_from_expr (expr->value.op.op1);
+	gfc_array_spec *as2 = gfc_get_arrayspec_from_expr (expr->value.op.op2);
+	if (as1)
+	  return as1;
+	else if (as2)
+	  return as2;
+	else
+	  return NULL;
+	break;
+      }
+    default:
+      return NULL;
+    }
+}
+
+
 /* General expression traversal function.  */
 
 bool

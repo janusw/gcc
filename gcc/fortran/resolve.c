@@ -8660,20 +8660,23 @@ resolve_assoc_var (gfc_symbol* sym, bool resolve_target)
 
   if (target->rank != 0)
     {
-      gfc_array_spec *as;
       /* The rank may be incorrectly guessed at parsing, therefore make sure
 	 it is corrected now.  */
       if (sym->ts.type != BT_CLASS && (!sym->as || sym->assoc->rankguessed))
 	{
 	  if (!sym->as)
-	    sym->as = gfc_get_array_spec ();
-	  as = sym->as;
-	  as->rank = target->rank;
-	  as->type = AS_DEFERRED;
-	  as->corank = gfc_get_corank (target);
-	  sym->attr.dimension = 1;
-	  if (as->corank != 0)
-	    sym->attr.codimension = 1;
+	    sym->as = gfc_get_arrayspec_from_expr (target);
+	  else
+	    *sym->as = *gfc_get_arrayspec_from_expr (target);
+	  if (sym->as)
+	    {
+	      sym->as->rank = target->rank;
+	      if (sym->as->rank != 0)
+		sym->attr.dimension = 1;
+	      sym->as->corank = gfc_get_corank (target);
+	      if (sym->as->corank != 0)
+		sym->attr.codimension = 1;
+	    }
 	}
     }
   else
