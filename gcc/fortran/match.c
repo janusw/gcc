@@ -1374,7 +1374,8 @@ gfc_match_assignment (void)
 
   gfc_check_do_variable (lvalue->symtree);
 
-  if (lvalue->ts.type == BT_CLASS)
+  if (lvalue->ts.type == BT_CLASS && (rvalue->ts.type != BT_CLASS
+				      || gfc_expr_attr (rvalue).class_ok))
     gfc_find_vtab (&rvalue->ts);
 
   return MATCH_YES;
