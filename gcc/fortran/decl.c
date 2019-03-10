@@ -10223,7 +10223,8 @@ gfc_match_derived_decl (void)
 	  gfc_error_recovery ();
 	  gfc_error_now ("Garbage after PARAMETERIZED TYPE declaration at %C");
 	}
-      sym->attr.pdt_template = 1;
+      if (sym->formal)
+        sym->attr.pdt_template = 1;
     }
 
   if (extended && !sym->components)
