@@ -12751,6 +12751,15 @@ resolve_fl_procedure (gfc_symbol *sym, int mp_flag)
       return false;
     }
 
+  /* F2018:C1585. */
+  if (sym->attr.pure && sym->result && sym->result->ts.type == BT_CLASS
+      && CLASS_DATA (sym->result)->attr.allocatable)
+    {
+      gfc_error ("Result of pure function %qs at %L shall not be both "
+		 "polymorphic and allocatable", sym->name, &sym->declared_at);
+      return false;
+    }
+
   if (sym->attr.is_bind_c && sym->attr.is_c_interop != 1)
     {
       gfc_formal_arglist *curr_arg;
